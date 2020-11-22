@@ -99,6 +99,46 @@ app.post('/api/search', (req, res) => {
         )
     }
 
+    // if(req.body.match){
+    //     {
+
+    //         "query_string": {
+    //             "fields": ["title.kobrick",
+    //                 "category.kobrick",
+    //                 "published_by.kobrick",
+    //                 "content.kobrick"],
+    //             "query": req.body.match
+    //         }
+
+    //     }
+    // }
+    // if(req.body.must){
+    //     {
+
+    //         "query_string": {
+    //             "fields": ["title.kobrick",
+    //                 "category.kobrick",
+    //                 "published_by.kobrick",
+    //                 "content.kobrick"],
+    //             "query": req.body.must
+    //         }
+
+    //     }
+    // }
+    // if(req.body.mustNot){
+    //     {
+
+    //         "query_string": {
+    //             "fields": ["title.kobrick",
+    //                 "category.kobrick",
+    //                 "published_by.kobrick",
+    //                 "content.kobrick"],
+    //             "query": req.body.mustNot
+    //         }
+
+    //     }
+    // }
+
     querySet.body.query.bool.must = must;
     // console.log(JSON.stringify(querySet));
 

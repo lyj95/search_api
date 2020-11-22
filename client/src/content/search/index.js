@@ -1,13 +1,11 @@
 import React from 'react'
 import { useState, useRef, useEffect } from 'react';
-import { Radio, DatePicker, Input, Col, Row, Button } from 'antd';
+import { Modal, Radio, DatePicker, Input, Col, Row, Button } from 'antd';
 import 'antd/dist/antd.css';
-import DetailModal from '../../component/modal/detailModal';
-
-
+// import DetailModal from '../../component/modal/detailModal';
+// import Modal from 'antd/lib/modal/Modal';
 import axios from "axios";
 import "./index.css";
-import Modal from 'antd/lib/modal/Modal';
 
 
 
@@ -18,7 +16,10 @@ const Testdiv = (props) => {
     const [Result, setResult] = useState("");
     const [Count, setCount] = useState("");
 
-    let params = { query: searchText.current.value, field: 'all', sort: '', gteDate: '', lteDate: '', gtePrice: '', ltePrice: '' };
+    let params = {
+        query: searchText.current.value, match: '', must: '', mustNot: '', field: 'all',
+        sort: '', gteDate: '', lteDate: '', gtePrice: '', ltePrice: ''
+    };
 
     const getResut = async () => {
         await axios.post('/api/search', params)
@@ -36,11 +37,11 @@ const Testdiv = (props) => {
             .then((Response) => {
                 const hits = Response.data;
 
-                if(hits.length == 0){
-                    setFilter("해당 필터 조건에 대한 결과가 없습니다.");    
+                if (hits.length == 0) {
+                    setFilter("해당 필터 조건에 대한 결과가 없습니다.");
                     setResult('');
                     setCount('');
-                }else{
+                } else {
                     setResult(hits);
                     setCount(hits.length);
                 }
@@ -114,15 +115,75 @@ const Testdiv = (props) => {
 
 
 
+    // modal
+
+    const basicQuery = useRef(false);
+    const matchQuery = useRef(false);
+    const mustQuery = useRef(false);
+    const mustNotQuery = useRef(false);
+
+
+    const [modal, setModal] = useState({
+        visible: false,
+    });
+    const openModal = () => {
+        setModal({
+            visible: !modal.visible
+        });
+    }
+
+
+
+    const handleOk = e => {
+        setModal({
+            visible: false,
+        });
+    };
+
+    const handleCancel = e => {
+        setModal({
+            visible: false,
+        });
+    };
+
+
+    const onDetailSearch = () => {
+        params.query = basicQuery.current.value;
+        params.match = matchQuery.current.value;
+        params.must = mustQuery.current.value;
+        params.mustNot = mustNotQuery.current.value;
+        searchText.current.value = basicQuery.current.value;
+        setModal({
+            visible: false,
+        });
+        getResut();
+    }
+
+    const handleGteDate = (dateString) => {
+        params.gteDate = dateString;
+    }
+    const handleLteDate = (dateString) => {
+        params.lteDate = dateString;
+    }
+    const onChangeDate = (e) => {
+
+        if (params.gteDate && params.lteDate) {
+            filtering();
+        } else {
+            alert("기간을 설정해 주세요.");
+        }
+
+    }
+
 
     return (
         <div className="body">
 
-            <input className="searchInput" placeholder={"검색어를 입력하세요."} ref={searchText} onKeyPress={appKeyPress} onChange={() => onSearch()} />
-            <button className='searchButton' onClick={() => onSearch()} >검색</button>
-            <Button shape="circle" onClick={() => openModal("null")}>
+            <input className="inputText" style={{ width: 350 }} placeholder={"검색어를 입력하세요."} ref={searchText} />
+            <Button type="primary" icon={<SearchOutlined />} style={{ marginRight: '20px' }} />
+            <Button shape="circle" onClick={() => openModal()}>
                 v
-            </Button>
+            </Button> <small>상세 검색</small>
             <hr />
             {
                 Filter ?
@@ -132,7 +193,7 @@ const Testdiv = (props) => {
             <br />
             <div className="container">
                 <div className="result" >
-                { Filter }
+                    {Filter}
                     <table>
                         {
                             Count != 0 ? <th>도서목록({Count}건)</th> : ''
@@ -156,7 +217,7 @@ const Testdiv = (props) => {
                                     )
                                 }) : ''
                         }
-                        
+
 
                     </table>
                 </div>
@@ -184,12 +245,15 @@ const Testdiv = (props) => {
                                     <Radio.Button value="now-1y/d">1년</Radio.Button>
                                 </Radio.Group>
                                 <br /><br />
+                                {/* rangepicker */}
                                 <Row gutter={5}>
                                     <Col span={16}>
-                                        <RangePicker />
+                                        {/* <RangePicker onChange={onChangeDate}  /> */}
+                                        <DatePicker onChange={handleGteDate} /> ~
+                                        <DatePicker onChange={handleLteDate} />
                                     </Col>
                                     <Col span={8}>
-                                        <Button>적용</Button>
+                                        <Button onClick={onChangeDate}>적용</Button>
                                     </Col>
                                 </Row>
 
@@ -201,7 +265,7 @@ const Testdiv = (props) => {
                                     <Input.Group>
                                         <Row gutter={5}>
                                             <Col span={8}>
-                                                <Input  ref={gtePrice} />
+                                                <Input ref={gtePrice} />
                                             </Col>
                                              ~
                                             <Col span={8}>
@@ -231,9 +295,25 @@ const Testdiv = (props) => {
                 }
 
             </div>
-            <DetailModal>
-
-            </DetailModal>
+            <Modal
+                visible={modal.visible}
+                title="상세검색"
+                onOk={handleOk}
+                onCancel={handleCancel}
+                footer={[
+                    <Button key="submit" type="primary" onClick={onDetailSearch}>
+                        검 색
+                  </Button>,
+                    <Button key="close" onClick={handleCancel}>
+                        취 소
+                  </Button>,
+                ]}
+            > <p><Input type="text" value={searchText.current.value} /></p>
+                <p>기본 검색어 <input className="inputText" type="text" ref={basicQuery} /></p>
+                <p>정확히 일치하는 단어/문장 <input className="inputText" type="text" ref={matchQuery} /></p>
+                <p>반드시 포함하는 단어(+) <input className="inputText" type="text" ref={mustQuery} /></p>
+                <p>제외하는 단어(-) <input className="inputText" type="text" ref={mustNotQuery} /></p>
+            </Modal>
         </div>
     )
 }
