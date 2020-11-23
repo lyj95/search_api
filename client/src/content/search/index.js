@@ -1,18 +1,15 @@
 import React from 'react'
-import { useState, useRef, useEffect } from 'react';
-import { Modal, Radio, DatePicker, Input, Col, Row, Button } from 'antd';
-import 'antd/dist/antd.css';
-// import DetailModal from '../../component/modal/detailModal';
-// import Modal from 'antd/lib/modal/Modal';
 import axios from "axios";
+import { useState, useRef } from 'react';
+import { Modal, Radio, DatePicker, Input, Col, Row, Button } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import 'antd/dist/antd.css';
 import "./index.css";
-
 
 
 
 const Testdiv = (props) => {
     const searchText = useRef(false);
-    // const [Text, setText] = useState("");
     const [Result, setResult] = useState("");
     const [Count, setCount] = useState("");
 
@@ -25,7 +22,7 @@ const Testdiv = (props) => {
         await axios.post('/api/search', params)
             .then((Response) => {
                 const hits = Response.data;
-
+                // console.log(JSON.stringify(hits));
                 setResult(hits);
                 setCount(hits.length);
             })
@@ -36,12 +33,13 @@ const Testdiv = (props) => {
         await axios.post('/api/search', params)
             .then((Response) => {
                 const hits = Response.data;
-
-                if (hits.length == 0) {
+                // console.log(hits);
+                if (hits.length === 0) {
                     setFilter("해당 필터 조건에 대한 결과가 없습니다.");
                     setResult('');
-                    setCount('');
+                    setCount('0');
                 } else {
+                    setFilter("");
                     setResult(hits);
                     setCount(hits.length);
                 }
@@ -80,16 +78,13 @@ const Testdiv = (props) => {
         setDate(e.target.value)
     };
 
-    const { RangePicker } = DatePicker;
-
-
     let gtePrice = useRef(false);
     let ltePrice = useRef(false);
 
     const onRangePrice = () => {
-        if (ltePrice.current.value !== null && gtePrice.current.value !== null) {
-            params.gtePrice = String(gtePrice);
-            params.ltePrice = String(ltePrice);
+        if (ltePrice.current.value !== '' && gtePrice.current.value !== '') {
+            params.gtePrice = gtePrice.current.value;
+            params.ltePrice = ltePrice.current.value;
         }
         filtering();
     }
@@ -104,19 +99,7 @@ const Testdiv = (props) => {
         setField(e.target.value)
     };
 
-    const [modal, setModal] = useState({
-        visible: false,
-    });
-    const openModal = (data) => {
-        setModal({
-            visible: !modal.visible
-        })
-    }
-
-
-
     // modal
-
     const basicQuery = useRef(false);
     const matchQuery = useRef(false);
     const mustQuery = useRef(false);
@@ -131,8 +114,6 @@ const Testdiv = (props) => {
             visible: !modal.visible
         });
     }
-
-
 
     const handleOk = e => {
         setModal({
@@ -153,6 +134,7 @@ const Testdiv = (props) => {
         params.must = mustQuery.current.value;
         params.mustNot = mustNotQuery.current.value;
         searchText.current.value = basicQuery.current.value;
+
         setModal({
             visible: false,
         });
@@ -179,7 +161,7 @@ const Testdiv = (props) => {
     return (
         <div className="body">
 
-            <input className="inputText" style={{ width: 350 }} placeholder={"검색어를 입력하세요."} ref={searchText} />
+            <input className="inputText" style={{ width: 350 }} placeholder={"검색어를 입력하세요."} ref={searchText} onKeyPress={appKeyPress} onChange={onSearch}/>
             <Button type="primary" icon={<SearchOutlined />} style={{ marginRight: '20px' }} />
             <Button shape="circle" onClick={() => openModal()}>
                 v
@@ -196,7 +178,7 @@ const Testdiv = (props) => {
                     {Filter}
                     <table>
                         {
-                            Count != 0 ? <th>도서목록({Count}건)</th> : ''
+                            Count != 0 ? <th style={{backgroundColor: 'gray', color: 'white'}}>도서목록({Count}건)</th> : ''
                         }
 
                         {
@@ -209,11 +191,14 @@ const Testdiv = (props) => {
 
                                                 {sources._source.content} <br />
 
-                                                <p>출판사 : {sources._source.published_by} 출판일 : {sources._source.published_year_month} 카테고리 : {sources._source.category}  </p>
-
+                                                <p>
+                                                    <small>출판사 : </small> {sources._source.published_by} &nbsp;&nbsp;
+                                                    <small>출판일  : </small> {sources._source.pub_year_month} &nbsp;&nbsp;
+                                                    <small>카테고리 : </small>{sources._source.category} &nbsp;&nbsp;
+                                                </p>
+                                                <hr />
                                             </td>
                                         </tr>
-
                                     )
                                 }) : ''
                         }
@@ -223,7 +208,7 @@ const Testdiv = (props) => {
                 </div>
 
                 {
-                    Count != 0 ?
+                    Count ?
                         <div className="filter">
                             <hr />
                             <div>
@@ -247,12 +232,14 @@ const Testdiv = (props) => {
                                 <br /><br />
                                 {/* rangepicker */}
                                 <Row gutter={5}>
-                                    <Col span={16}>
                                         {/* <RangePicker onChange={onChangeDate}  /> */}
-                                        <DatePicker onChange={handleGteDate} /> ~
-                                        <DatePicker onChange={handleLteDate} />
+                                    <Col span={8}>
+                                        <DatePicker onChange={handleGteDate} />
                                     </Col>
                                     <Col span={8}>
+                                        <DatePicker onChange={handleLteDate} />
+                                    </Col>
+                                    <Col span={6}>
                                         <Button onClick={onChangeDate}>적용</Button>
                                     </Col>
                                 </Row>
@@ -265,11 +252,11 @@ const Testdiv = (props) => {
                                     <Input.Group>
                                         <Row gutter={5}>
                                             <Col span={8}>
-                                                <Input ref={gtePrice} />
+                                                <input className="inputText" ref={gtePrice} />
                                             </Col>
                                              ~
                                             <Col span={8}>
-                                                <Input ref={ltePrice} />
+                                                <input className="inputText" ref={ltePrice} />
                                             </Col>
                                             <Col span={5}>
                                                 <Button onClick={() => onRangePrice()}>적용</Button>
@@ -313,6 +300,7 @@ const Testdiv = (props) => {
                 <p>정확히 일치하는 단어/문장 <input className="inputText" type="text" ref={matchQuery} /></p>
                 <p>반드시 포함하는 단어(+) <input className="inputText" type="text" ref={mustQuery} /></p>
                 <p>제외하는 단어(-) <input className="inputText" type="text" ref={mustNotQuery} /></p>
+                <small>* 여러 개의 단어를 입력할 때는 쉼표(,)로 구분해서 입력합니다.</small>
             </Modal>
         </div>
     )
@@ -325,6 +313,5 @@ function index() {
         <Testdiv />
     )
 }
-
 
 export default index

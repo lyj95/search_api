@@ -27,10 +27,10 @@ table {
 }
 
 .filter {
+    position: fixed;
     float: right;
+    right: 0;
     width: 30%;
-    /* background: #333; */
-    /* color: #fff; */
     margin-right: 50px;
 }
 .result {

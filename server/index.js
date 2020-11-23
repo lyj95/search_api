@@ -6,7 +6,6 @@ const port = 5000;
 
 const { Client } = require('elasticsearch');
 const bodyParser = require('body-parser');
-const { json } = require('body-parser');
 const client = new Client({ node: 'http://localhost:9200' });
 
 app.use(bodyParser.json());
@@ -21,6 +20,7 @@ app.post('/api/search', (req, res) => {
 
     let querySet = {
         index: 'yes24_index_01',
+        size: 182,
         body: {
             query: {
                 bool: {
@@ -30,8 +30,6 @@ app.post('/api/search', (req, res) => {
     };
 
     let must = [];
-    let should = [];
-    let must_not = [];
 
     if (req.body.field !== 'all') {
         must.push(
@@ -68,17 +66,20 @@ app.post('/api/search', (req, res) => {
             ]
     }
 
-    let lte = "now";
     if (req.body.gteDate) {
-        if (req.body.lte) {
-            lte = req.body.lteDate;
+        let gte = req.body.gteDate;
+        let lte = "now";
+
+        if (req.body.lteDate) {
+            gte = req.body.gteDate.substring(0,10);
+            lte = req.body.lteDate.substring(0,10);
         }
 
         must.push(
             {
                 "range": {
                     "pub_year_month": {
-                        "gte": req.body.gteDate,
+                        "gte": gte,
                         "lte": lte
                     }
                 }
@@ -91,53 +92,94 @@ app.post('/api/search', (req, res) => {
             {
                 "range": {
                     "price": {
-                        "gte": parseInt(req.body.gtePrice),
-                        "lte": parseInt(req.body.ltePrice)
+                        "gte": parseInt(req.body.gtePrice, 10),
+                        "lte": parseInt(req.body.ltePrice, 10)
                     }
                 }
             }
         )
     }
 
-    // if(req.body.match){
-    //     {
+    if(req.body.match){
+        const queries = (req.body.match+'').split(',');
 
-    //         "query_string": {
-    //             "fields": ["title.kobrick",
-    //                 "category.kobrick",
-    //                 "published_by.kobrick",
-    //                 "content.kobrick"],
-    //             "query": req.body.match
-    //         }
+        let mustquery = {
+            "bool": {
+                "must": []
+              }
+        }
 
-    //     }
-    // }
-    // if(req.body.must){
-    //     {
+        queries.map((data) => {
+            mustquery.bool.must.push(
+                {
+                    "query_string": {
+                        "fields": ["title.kobrick",
+                            "category.kobrick",
+                            "published_by.kobrick",
+                            "content.kobrick"],
+                        "query": data
+                    }
+                }
+            )
 
-    //         "query_string": {
-    //             "fields": ["title.kobrick",
-    //                 "category.kobrick",
-    //                 "published_by.kobrick",
-    //                 "content.kobrick"],
-    //             "query": req.body.must
-    //         }
+        })
 
-    //     }
-    // }
-    // if(req.body.mustNot){
-    //     {
+        must.push(mustquery);
+    }
+    
+    if(req.body.must){
 
-    //         "query_string": {
-    //             "fields": ["title.kobrick",
-    //                 "category.kobrick",
-    //                 "published_by.kobrick",
-    //                 "content.kobrick"],
-    //             "query": req.body.mustNot
-    //         }
+        const queries = (req.body.must+'').split(',');
 
-    //     }
-    // }
+        let mustquery = {
+            "bool": {
+                "must": []
+              }
+        }
+
+        queries.map((data) => {
+            mustquery.bool.must.push(
+                {
+                    "query_string": {
+                        "fields": ["title.kobrick",
+                            "category.kobrick",
+                            "published_by.kobrick",
+                            "content.kobrick"],
+                        "query": data
+                    }
+                }
+            )
+
+        })
+
+        must.push(mustquery);
+    }
+    if(req.body.mustNot){
+        const queries = (req.body.mustNot+'').split(',');
+
+        let mustnotquery = {
+            "bool": {
+                "must_not": []
+              }
+        }
+
+        queries.map((data) => {
+            mustnotquery.bool.must_not.push(
+                {
+                    "query_string": {
+                        "fields": ["title.kobrick",
+                            "category.kobrick",
+                            "published_by.kobrick",
+                            "content.kobrick"],
+                        "query": data
+                    }
+                }
+            )
+
+        })
+
+        must.push(mustnotquery);
+    }
 
     querySet.body.query.bool.must = must;
     // console.log(JSON.stringify(querySet));
@@ -152,22 +194,6 @@ app.post('/api/search', (req, res) => {
 
 })
 
-
-
-app.post('/search/detail', (req, res) => {
-    if (req.body.must != null) {
-        querySet.body.query.bool = {
-            "must": [
-                {
-                    "query_string": {
-                        "fields": ["title.kobrick", "category.kobrick", "published_by.kobrick", "content.kobrick"],
-                        "query": req.body.must
-                    }
-                }
-            ]
-        }
-    }
-})
 
 
 app.listen(port, () => {
