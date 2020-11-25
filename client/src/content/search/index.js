@@ -5,21 +5,30 @@ import { Modal, Radio, DatePicker, Input, Col, Row, Button } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import 'antd/dist/antd.css';
 import "./index.css";
+// import ReactHtmlParser, { processNodes, convertNodeToElement, htmlparser2 } from 'react-html-parser';
 
 
 
 const Testdiv = (props) => {
+
     const searchText = useRef(false);
+    const gtePrice = useRef(false);
+    const ltePrice = useRef(false);
+    const basicQuery = useRef(false);
+    const matchQuery = useRef(false);
+    const mustQuery = useRef(false);
+    const mustNotQuery = useRef(false);
     const [Result, setResult] = useState("");
     const [Count, setCount] = useState("");
-
-    let params = {
+    const [Filter, setFilter] = useState("");
+    const [fields, setFields] = useState({
         query: searchText.current.value, match: '', must: '', mustNot: '', field: 'all',
-        sort: '', gteDate: '', lteDate: '', gtePrice: '', ltePrice: ''
-    };
+        sort: 'default', gteDate: 'all', lteDate: '', gtePrice: '', ltePrice: ''
+    })
+
 
     const getResut = async () => {
-        await axios.post('/api/search', params)
+        await axios.post('/api/search', fields)
             .then((Response) => {
                 const hits = Response.data;
                 // console.log(JSON.stringify(hits));
@@ -28,12 +37,16 @@ const Testdiv = (props) => {
             })
     }
 
-    const [Filter, setFilter] = useState("");
+
     const filtering = async () => {
-        await axios.post('/api/search', params)
+        
+        // console.log(fields);
+        fields.query = searchText.current.value;
+        setFields(fields);
+
+        await axios.post('/api/search', fields)
             .then((Response) => {
                 const hits = Response.data;
-                // console.log(hits);
                 if (hits.length === 0) {
                     setFilter("해당 필터 조건에 대한 결과가 없습니다.");
                     setResult('');
@@ -48,7 +61,9 @@ const Testdiv = (props) => {
     }
 
     const onSearch = () => {
-        params.query = searchText.current.value;
+
+        fields.query = searchText.current.value;
+        setFields(fields);
         getResut();
     }
 
@@ -58,57 +73,66 @@ const Testdiv = (props) => {
         }
     }
 
-    const [sort, setSort] = React.useState('default');
+
     const handleSort = (e) => {
-        if (e.target.value === 'latest') {
-            params.sort = 'sort';
-        }
+        fields.sort = e.target.value;
+        setFields(fields);
         filtering();
-        setSort(e.target.value)
     };
 
-    const [date, setDate] = React.useState('all');
+
     const handleRangeDate = (e) => {
-
-        if (e.target.value !== 'all') {
-            params.gteDate = e.target.value;
-        }
-
+        fields.gteDate = e.target.value;
+        setFields(fields);
         filtering();
-        setDate(e.target.value)
     };
 
-    let gtePrice = useRef(false);
-    let ltePrice = useRef(false);
+    const handleGteDate = (dateString) => {
+        fields.gteDate = dateString;
+        setFields(fields);
+    }
+
+    const handleLteDate = (dateString) => {
+        fields.lteDate = dateString;
+        setFields(fields);
+    }
+
+    const onChangeDate = (e) => {
+
+        if (fields.gteDate && fields.lteDate) {
+            filtering();
+        } else if (fields.gteDate || fields.lteDate) {
+            alert("기간을 정확히 설정해 주세요.");
+        } else {
+            fields.gteDate = 'all';
+            fields.lteDate = '';
+            setFields(fields);
+
+            filtering();
+        }
+
+    }
 
     const onRangePrice = () => {
         if (ltePrice.current.value !== '' && gtePrice.current.value !== '') {
-            params.gtePrice = gtePrice.current.value;
-            params.ltePrice = ltePrice.current.value;
+            fields.gtePrice = gtePrice.current.value;
+            fields.ltePrice = ltePrice.current.value;
         }
         filtering();
     }
 
 
-    const [field, setField] = React.useState('all');
     const handleRangeField = (e) => {
-        if (e.target.value !== 'all') {
-            params.field = e.target.value;
-        }
+        fields.field = e.target.value;
+        setFields(fields);
         filtering();
-        setField(e.target.value)
     };
 
     // modal
-    const basicQuery = useRef(false);
-    const matchQuery = useRef(false);
-    const mustQuery = useRef(false);
-    const mustNotQuery = useRef(false);
-
-
     const [modal, setModal] = useState({
         visible: false,
     });
+
     const openModal = () => {
         setModal({
             visible: !modal.visible
@@ -127,41 +151,33 @@ const Testdiv = (props) => {
         });
     };
 
-
     const onDetailSearch = () => {
-        params.query = basicQuery.current.value;
-        params.match = matchQuery.current.value;
-        params.must = mustQuery.current.value;
-        params.mustNot = mustNotQuery.current.value;
-        searchText.current.value = basicQuery.current.value;
+        if (basicQuery.current.value) {
+            fields.query = basicQuery.current.value;
+            searchText.current.value = basicQuery.current.value;
+        } else {
+            fields.query = searchText.current.value;
+        }
 
+        fields.match = matchQuery.current.value;
+        fields.must = mustQuery.current.value;
+        fields.mustNot = mustNotQuery.current.value;
+
+        setFields(fields);
         setModal({
             visible: false,
         });
+
         getResut();
     }
 
-    const handleGteDate = (dateString) => {
-        params.gteDate = dateString;
-    }
-    const handleLteDate = (dateString) => {
-        params.lteDate = dateString;
-    }
-    const onChangeDate = (e) => {
 
-        if (params.gteDate && params.lteDate) {
-            filtering();
-        } else {
-            alert("기간을 설정해 주세요.");
-        }
-
-    }
 
 
     return (
         <div className="body">
 
-            <input className="inputText" style={{ width: 350 }} placeholder={"검색어를 입력하세요."} ref={searchText} onKeyPress={appKeyPress} onChange={onSearch}/>
+            <input className="inputText" style={{ width: 350 }} placeholder={"검색어를 입력하세요."} ref={searchText} onKeyPress={appKeyPress} />
             <Button type="primary" icon={<SearchOutlined />} style={{ marginRight: '20px' }} />
             <Button shape="circle" onClick={() => openModal()}>
                 v
@@ -178,7 +194,7 @@ const Testdiv = (props) => {
                     {Filter}
                     <table>
                         {
-                            Count != 0 ? <th style={{backgroundColor: 'gray', color: 'white'}}>도서목록({Count}건)</th> : ''
+                            Count != 0 ? <th style={{ backgroundColor: 'gray', color: 'white' }}>도서목록({Count}건)</th> : ''
                         }
 
                         {
@@ -187,14 +203,56 @@ const Testdiv = (props) => {
                                     return (
                                         <tr key={index}>
                                             <td>
-                                                <a> {sources._source.title}</a> <br />
 
-                                                {sources._source.content} <br />
+
+                                                {sources.highlight ?
+                                                    sources.highlight['title.kobrick'] ?
+                                                        <a><span dangerouslySetInnerHTML={{ __html: sources.highlight['title.kobrick'] }}></span></a> : <a> {sources._source.title}</a>
+                                                    : <a> {sources._source.title}</a>
+                                                }
+                                                <br />
+                                                {
+                                                    sources.highlight ?
+
+                                                        sources.highlight['content.kobrick'] ?
+                                                            <span dangerouslySetInnerHTML={{ __html: sources.highlight['content.kobrick'] }}></span> : sources._source.content
+                                                        : sources._source.content
+
+                                                }
+                                                <br />
 
                                                 <p>
-                                                    <small>출판사 : </small> {sources._source.published_by} &nbsp;&nbsp;
-                                                    <small>출판일  : </small> {sources._source.pub_year_month} &nbsp;&nbsp;
-                                                    <small>카테고리 : </small>{sources._source.category} &nbsp;&nbsp;
+                                                    <small>출판사 : </small>
+                                                    {
+                                                        sources.highlight ?
+
+                                                            sources.highlight['published_by.kobrick'] ?
+                                                                <span dangerouslySetInnerHTML={{ __html: sources.highlight['published_by.kobrick'] }}></span>
+                                                                : sources._source.published_by
+                                                            : sources._source.published_by
+
+                                                    }
+                                                    &nbsp;&nbsp;
+
+                                                    <small>출판일  : </small>
+                                                    {sources._source.pub_year_month}
+                                                    &nbsp;&nbsp;
+
+                                                    <small>카테고리 : </small>
+                                                    {
+                                                        sources.highlight ?
+
+                                                            sources.highlight['category.kobrick'] ?
+                                                                <span dangerouslySetInnerHTML={{ __html: sources.highlight['category.kobrick'] }}></span>
+                                                                : sources._source.category
+                                                            : sources._source.category
+
+                                                    }
+                                                    &nbsp;&nbsp;
+
+                                                    <small>가격 : </small>
+                                                    {sources._source.price}
+                                                    &nbsp;&nbsp;
                                                 </p>
                                                 <hr />
                                             </td>
@@ -213,28 +271,30 @@ const Testdiv = (props) => {
                             <hr />
                             <div>
                                 결과정렬 <br />
-                                <Radio.Group value={sort} onChange={handleSort}>
+                                <Radio.Group value={fields.sort} onChange={handleSort}>
                                     <Radio.Button value="default">정확도</Radio.Button>
-                                    <Radio.Button value="latest">최신순</Radio.Button>
+                                    <Radio.Button value="sort">최신순</Radio.Button>
                                 </Radio.Group>
 
                             </div>
                             <hr />
                             <div>
                                 기간 <br />
-                                <Radio.Group value={date} onChange={handleRangeDate}>
-                                    <Radio.Button value="all">전체</Radio.Button>
-                                    <Radio.Button value="now-1d/d">1일</Radio.Button>
-                                    <Radio.Button value="now-7d/d">1주</Radio.Button> <br />
-                                    <Radio.Button value="now-1M/d">1개월</Radio.Button>
-                                    <Radio.Button value="now-1y/d">1년</Radio.Button>
+                                <Radio.Group value={fields.gteDate} onChange={handleRangeDate}>
+                                    <Radio.Button value="all" >전체</Radio.Button>
+                                    <Radio.Button value="now-1d/d" >1일</Radio.Button>
+                                    <Radio.Button value="now-7d/d" >1주</Radio.Button> <br />
+                                    <Radio.Button value="now-1M/d" >1개월</Radio.Button>
+                                    <Radio.Button value="now-1y/d" >1년</Radio.Button>
                                 </Radio.Group>
                                 <br /><br />
                                 {/* rangepicker */}
                                 <Row gutter={5}>
-                                        {/* <RangePicker onChange={onChangeDate}  /> */}
                                     <Col span={8}>
                                         <DatePicker onChange={handleGteDate} />
+                                    </Col>
+                                    <Col span={1}>
+                                        ~
                                     </Col>
                                     <Col span={8}>
                                         <DatePicker onChange={handleLteDate} />
@@ -268,7 +328,7 @@ const Testdiv = (props) => {
                             <hr />
                             <div>
                                 검색영역 <br />
-                                <Radio.Group value={field} onChange={handleRangeField}>
+                                <Radio.Group value={fields.field} onChange={handleRangeField}>
                                     <Radio.Button value="all">전체</Radio.Button>
                                     <Radio.Button value="title">제목</Radio.Button>
                                     <Radio.Button value="content">본문</Radio.Button> <br />

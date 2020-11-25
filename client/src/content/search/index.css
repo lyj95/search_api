@@ -75,3 +75,6 @@ table {
     /* -webkit-box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
             box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2); */
   }
+
+  .highlight { font-weight : bold; background-color:#fbff00f3; }
+  span>span { font-weight : bold; color:#ff0000f3; }

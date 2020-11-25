@@ -25,17 +25,18 @@ app.post('/api/search', (req, res) => {
             query: {
                 bool: {
                 }
-            }
+            },
+
         }
     };
 
     let must = [];
 
-    if (req.body.field !== 'all') {
+    if (req.body.field && req.body.field !== 'all') {
         must.push(
             {
                 "query_string": {
-                    "fields": [req.body.field],
+                    "fields": [req.body.field+'.kobrick'],
                     "query": req.body.query
                 }
             }
@@ -45,17 +46,18 @@ app.post('/api/search', (req, res) => {
         must.push({
 
             "query_string": {
-                "fields": ["title.kobrick",
-                    "category.kobrick",
-                    "published_by.kobrick",
-                    "content.kobrick"],
+                "fields": [
+                    "title^100", "title.kobrick^100",
+                    "category", "category.kobrick",
+                    "published_by", "published_by.kobrick",
+                    "content^50", "content.kobrick^50"],
                 "query": req.body.query
             }
 
         })
     }
 
-    if (req.body.sort) {
+    if (req.body.sort === 'sort') {
         querySet.body.sort =
             [
                 {
@@ -66,13 +68,13 @@ app.post('/api/search', (req, res) => {
             ]
     }
 
-    if (req.body.gteDate) {
-        let gte = req.body.gteDate;
+    if (req.body.gteDate !== 'all') {
+        let gte = req.body.gteDate.substring(0, 10);
         let lte = "now";
 
         if (req.body.lteDate) {
-            gte = req.body.gteDate.substring(0,10);
-            lte = req.body.lteDate.substring(0,10);
+            gte = req.body.gteDate.substring(0, 10);
+            lte = req.body.lteDate.substring(0, 10);
         }
 
         must.push(
@@ -100,23 +102,72 @@ app.post('/api/search', (req, res) => {
         )
     }
 
-    if(req.body.match){
-        const queries = (req.body.match+'').split(',');
+    if (req.body.match) {
+        const queries = (req.body.match + '').split(',');
 
         let mustquery = {
             "bool": {
                 "must": []
-              }
+            }
+        }
+
+        let trimData;
+        queries.map((data) => {
+            trimData = data.replace(/^\s+|\s+$/gm,'');
+            mustquery.bool.must.push(
+                {
+                    "bool": {
+                        "should": [
+                            {
+                                "term": {
+                                    "title.kobrick": trimData
+                                }
+                            },
+                            {
+                                "term": {
+                                    "content.kobrick": trimData
+                                }
+                            },
+                            {
+                                "term": {
+                                    "category.kobrick": trimData
+                                }
+                            },
+                            {
+                                "term": {
+                                    "published_by.kobrick": trimData
+                                }
+                            }
+                        ]
+                    }
+                }
+            )
+
+        })
+
+        must.push(mustquery);
+    }
+
+    if (req.body.must) {
+
+        const queries = (req.body.must + '').split(',');
+
+        let mustquery = {
+            "bool": {
+                "must": []
+            }
         }
 
         queries.map((data) => {
+            data = data.replace(/^\s+|\s+$/gm,'');
             mustquery.bool.must.push(
                 {
                     "query_string": {
-                        "fields": ["title.kobrick",
-                            "category.kobrick",
-                            "published_by.kobrick",
-                            "content.kobrick"],
+                        "fields": [
+                            "title^100", "title.kobrick^100",
+                            "category", "category.kobrick",
+                            "published_by", "published_by.kobrick",
+                            "content^50", "content.kobrick^50"],
                         "query": data
                     }
                 }
@@ -126,51 +177,25 @@ app.post('/api/search', (req, res) => {
 
         must.push(mustquery);
     }
-    
-    if(req.body.must){
-
-        const queries = (req.body.must+'').split(',');
-
-        let mustquery = {
-            "bool": {
-                "must": []
-              }
-        }
-
-        queries.map((data) => {
-            mustquery.bool.must.push(
-                {
-                    "query_string": {
-                        "fields": ["title.kobrick",
-                            "category.kobrick",
-                            "published_by.kobrick",
-                            "content.kobrick"],
-                        "query": data
-                    }
-                }
-            )
-
-        })
-
-        must.push(mustquery);
-    }
-    if(req.body.mustNot){
-        const queries = (req.body.mustNot+'').split(',');
+    if (req.body.mustNot) {
+        const queries = (req.body.mustNot + '').split(',');
 
         let mustnotquery = {
             "bool": {
                 "must_not": []
-              }
+            }
         }
 
         queries.map((data) => {
+            data = data.replace(/^\s+|\s+$/gm,'');
             mustnotquery.bool.must_not.push(
                 {
                     "query_string": {
-                        "fields": ["title.kobrick",
-                            "category.kobrick",
-                            "published_by.kobrick",
-                            "content.kobrick"],
+                        "fields": [
+                            "title^100", "title.kobrick^100",
+                            "category", "category.kobrick",
+                            "published_by", "published_by.kobrick",
+                            "content^50", "content.kobrick^50"],
                         "query": data
                     }
                 }
@@ -181,12 +206,41 @@ app.post('/api/search', (req, res) => {
         must.push(mustnotquery);
     }
 
+    querySet.body.highlight = {
+        "fields": [
+            {
+                "content.kobrick": {
+                    "pre_tags": "<span>",
+                    "post_tags": "</span>"
+                }
+            },
+            {
+                "category.kobrick": {
+                    "pre_tags": "<span className='highlight'>",
+                    "post_tags": "</span>"
+                }
+            },
+            {
+                "title.kobrick": {
+                    "pre_tags": "<span className='highlight'>",
+                    "post_tags": "</span>"
+                }
+            },
+            {
+                "published_by.kobrick": {
+                    "pre_tags": "<span className='highlight'>",
+                    "post_tags": "</span>"
+                }
+            }
+        ]
+    }
     querySet.body.query.bool.must = must;
     // console.log(JSON.stringify(querySet));
 
     let search = client.search(querySet);
     search.then((message) => {
         res.send(message.hits.hits);
+
     })
         .catch((error) => {
             console.log(error);
