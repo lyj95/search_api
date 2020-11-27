@@ -15,9 +15,9 @@ const Testdiv = (props) => {
     const gtePrice = useRef(false);
     const ltePrice = useRef(false);
     const basicQuery = useRef(false);
-    const matchQuery = useRef(false);
-    const mustQuery = useRef(false);
-    const mustNotQuery = useRef(false);
+    const matchQuery = useRef("");
+    const mustQuery = useRef("");
+    const mustNotQuery = useRef("");
     const [Result, setResult] = useState("");
     const [Count, setCount] = useState("");
     const [Filter, setFilter] = useState("");
@@ -63,6 +63,14 @@ const Testdiv = (props) => {
     const onSearch = () => {
 
         fields.query = searchText.current.value;
+        fields.match = '';
+        fields.must = '';
+        fields.mustNot = '';
+        // console.log(mustNotQuery.current.value);
+        // mustNotQuery.current.value = '';
+        // mustQuery.current.value = '';
+        // matchQuery.current.value = '';
+
         setFields(fields);
         getResut();
     }
@@ -73,13 +81,11 @@ const Testdiv = (props) => {
         }
     }
 
-
     const handleSort = (e) => {
         fields.sort = e.target.value;
         setFields(fields);
         filtering();
     };
-
 
     const handleRangeDate = (e) => {
         fields.gteDate = e.target.value;
@@ -370,7 +376,7 @@ const Testdiv = (props) => {
 function index() {
 
     return (
-        <Testdiv />
+        <Testdiv/>
     )
 }
 
