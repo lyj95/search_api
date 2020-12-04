@@ -66,10 +66,6 @@ const Testdiv = (props) => {
         fields.match = '';
         fields.must = '';
         fields.mustNot = '';
-        // console.log(mustNotQuery.current.value);
-        // mustNotQuery.current.value = '';
-        // mustQuery.current.value = '';
-        // matchQuery.current.value = '';
 
         setFields(fields);
         getResut();

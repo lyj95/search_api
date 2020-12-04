@@ -187,6 +187,9 @@ app.post('/api/search', (req, res) => {
         }
 
         queries.map((data) => {
+            // 공백제거 정규식
+            // /(^\s*)|(\s*$)/gi
+
             data = data.replace(/^\s+|\s+$/gm,'');
             mustnotquery.bool.must_not.push(
                 {
